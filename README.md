@@ -30,19 +30,14 @@ football-manager/
 ## Prérequis
 
 - Node.js 18+
-- PostgreSQL 14+
+- MySQL 8.0+
 - npm ou yarn
 
 ## Installation
 
-### 1. Base de données PostgreSQL
+### 1. Base de données MySQL
 
-Créer la base de données :
-```bash
-createdb football_management
-```
-
-Ou via psql :
+Via un client MySQL (HeidiSQL, MySQL Workbench, ou terminal) :
 ```sql
 CREATE DATABASE football_management;
 ```
@@ -115,7 +110,7 @@ npm run dev
 - **Super Admin** : Stats utilisateurs, répartition par rôle
 - **Admin Sportif** : Dashboard vide (prêt pour modules football)
 - **Responsable Club** : Dashboard vide
-- **Arbitre** : Dashboard vide
+- **Arbitre** : Gestion des matchs (Démarrage, saisie des buts par joueur)
 - **Visiteur** : Dashboard public
 
 ### Interface

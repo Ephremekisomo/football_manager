@@ -118,7 +118,7 @@ export const getSidebarItems = (role) => {
       label: 'Trophées',
       icon: 'Award',
       path: '/trophees',
-      roles: ['super_admin', 'admin_sportif', 'visiteur']
+      roles: ['super_admin', 'admin_sportif', 'responsable_club', 'visiteur']
     },
     {
       label: 'Profil',

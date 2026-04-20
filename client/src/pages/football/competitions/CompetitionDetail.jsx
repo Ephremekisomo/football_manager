@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Users, Calendar, Check, X } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Users, Calendar, Check, X, Plus, Award } from 'lucide-react';
 import { competitionAPI, participationAPI, clubAPI } from '@/api';
 import { useAuthStore } from '@/store';
+import api from '@/api';
 import { formatDate } from '@/utils';
 
 export default function CompetitionDetail() {
@@ -10,11 +11,12 @@ export default function CompetitionDetail() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [competition, setCompetition] = useState(null);
-  const [participations, setParticipations] = useState([]);  
+  const [participations, setParticipations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isClubInscris, setIsClubInscris] = useState(false);
   const [userClub, setUserClub] = useState(null);
   const [isLoadingInscription, setIsLoadingInscription] = useState(false);
+  const [attributing, setAttributing] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +55,7 @@ export default function CompetitionDetail() {
   };
 
   const getTypeLabel = (type) => {
-    const labels = { chapitre: 'Championnat', coupe: 'Coupe', supercoupe: 'Supercoupe' };
+    const labels = { championnat: 'Championnat', coupe: 'Coupe', supercoupe: 'Supercoupe' };
     return labels[type] || type;
   };
 
@@ -72,7 +74,21 @@ export default function CompetitionDetail() {
       await competitionAPI.activate(id);
       window.location.reload();
     } catch (error) {
-      alert('Erreur lors de l\'activation');
+      alert("Erreur lors de l'activation");
+    }
+  };
+
+  const handleAttribuerTrophee = async () => {
+    if (!confirm('Attribuer le trophée de champion au club leader ?')) return;
+    setAttributing(true);
+    try {
+      const response = await api.post(`/trophees/champion/${id}`);
+      alert(response.data.message);
+      window.location.reload();
+    } catch (error) {
+      alert('Erreur attribution: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAttributing(false);
     }
   };
 
@@ -83,7 +99,7 @@ export default function CompetitionDetail() {
     <div className="max-w-4xl mx-auto">
       <button onClick={() => navigate('/competitions')} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6">
         <ArrowLeft className="w-4 h-4" />
-        Retour aux compétition
+        Retour aux compétitions
       </button>
 
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
@@ -97,7 +113,7 @@ export default function CompetitionDetail() {
               <p className="text-slate-500">{getTypeLabel(competition.type_competition)} - {competition.saison}</p>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${competition.statut === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${competition.statut === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`} >
             {competition.statut === 'active' ? 'Active' : 'Clôturée'}
           </span>
         </div>
@@ -128,9 +144,19 @@ export default function CompetitionDetail() {
                 Clôturer la compétition
               </button>
             ) : (
-              <button onClick={handleActivate} className="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg">
-                Activer la compétition
-              </button>
+              <React.Fragment>
+                <button onClick={handleActivate} className="px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg">
+                  Activer la compétition
+                </button>
+                <button 
+                  onClick={handleAttribuerTrophee}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 shadow-lg hover:shadow-xl transition-all"
+                  disabled={attributing}
+                >
+                  <Award className="w-4 h-4" />
+                  {attributing ? 'Attribution...' : '🏆 Trophée Champion'}
+                </button>
+              </React.Fragment>
             )}
             <Link to={`/competitions/${id}/edit`} className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50">
               <Edit className="w-4 h-4" />
@@ -146,7 +172,7 @@ export default function CompetitionDetail() {
           <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
             <button 
               onClick={async () => {
-                if (!confirm(`Inscrire ${userClub.nom_club} à ${competition.nom_competition} ?`)) return;
+                if (!confirm(`Inscrire ${userClub.nom_club} à ${competition.nom_competition} ?`) ) return;
                 setIsLoadingInscription(true);
                 try {
                   await participationAPI.create({ competition_id: parseInt(id), club_id: user.club_id });
@@ -164,6 +190,20 @@ export default function CompetitionDetail() {
               <Plus className="w-4 h-4" />
               {isLoadingInscription ? 'Inscription...' : `Inscrire ${userClub.nom_club}`}
             </button>
+          </div>
+        )}
+        {canEdit && competition.statut !== 'active' && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <Award className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-semibold text-slate-900">🏆 Attribution Trophée Champion</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Le trophée de champion sera automatiquement attribué au club leader du classement final.
+            </p>
+            <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded">
+              * Nécessite classements calculés via matchs/résultats
+            </div>
           </div>
         )}
         {user?.role === 'responsable_club' && competition.statut === 'active' && isClubInscris && userClub && (

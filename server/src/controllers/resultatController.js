@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const syncClassementUtils = require('./syncClassements');
 
 const getAllResultats = async (req, res) => {
   try {
@@ -116,7 +117,7 @@ const getResultatByMatch = async (req, res) => {
 
 const createResultat = async (req, res) => {
   try {
-    const { match_id, buts_domicile, buts_exterieur, observations, validation_officielle } = req.body;
+    const { match_id, buts_domicile, buts_exterieur, observations, validation_officielle, buteurs } = req.body;
 
     if (!match_id) {
       return res.status(400).json({ success: false, message: 'Match requis' });
@@ -132,16 +133,34 @@ const createResultat = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Un résultat existe déjà pour ce match' });
     }
 
-    await pool.query(
-      'INSERT INTO resultats (match_id, buts_domicile, buts_exterieur, observations, validation_officielle) VALUES (?, ?, ?, ?, ?)',
-      [match_id, buts_domicile || 0, buts_exterieur || 0, observations, validation_officielle || false]
-    );
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      
+      const [resInsert] = await connection.query(
+        'INSERT INTO resultats (match_id, buts_domicile, buts_exterieur, observations, validation_officielle) VALUES (?, ?, ?, ?, ?)',
+        [match_id, buts_domicile || 0, buts_exterieur || 0, observations, validation_officielle || false]
+      );
+      
+      await connection.query('UPDATE matchs SET statut = ? WHERE id = ?', ['termine', match_id]);
+      
+      // Insertion des buteurs dans la même transaction
+      if (buteurs && buteurs.length > 0) {
+        const values = buteurs.map(b => [match_id, b.joueur_id, b.nb_buts]);
+        await connection.query(
+          'INSERT INTO match_buteurs (match_id, joueur_id, nb_buts) VALUES ?',
+          [values]
+        );
+      }
 
-    await pool.query('UPDATE matchs SET statut = ? WHERE id = ?', ['termine', match_id]);
-
-    const [newResultat] = await pool.query('SELECT * FROM resultats WHERE match_id = ?', [match_id]);
-
-    res.status(201).json({ success: true, data: newResultat[0] });
+      await connection.commit();
+      res.status(201).json({ success: true, data: { id: resInsert.insertId, match_id } });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     console.error('Error creating resultat:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -151,7 +170,7 @@ const createResultat = async (req, res) => {
 const updateResultat = async (req, res) => {
   try {
     const { id } = req.params;
-    const { buts_domicile, buts_exterieur, observations, validation_officielle } = req.body;
+    const { buts_domicile, buts_exterieur, observations, validation_officielle, buteurs } = req.body;
 
     const [existing] = await pool.query('SELECT * FROM resultats WHERE id = ?', [id]);
     if (existing.length === 0) {
@@ -161,21 +180,50 @@ const updateResultat = async (req, res) => {
     let updateFields = [];
     let updateValues = [];
 
-    if (buts_domicile !== undefined) { updateFields.push('buts_domicile = ?'); updateValues.push(buts_domicile); }
-    if (buts_exterieur !== undefined) { updateFields.push('buts_exterieur = ?'); updateValues.push(buts_exterieur); }
-    if (observations) { updateFields.push('observations = ?'); updateValues.push(observations); }
-    if (validation_officielle !== undefined) { updateFields.push('validation_officielle = ?'); updateValues.push(validation_officielle); }
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({ success: false, message: 'Aucun champ à mettre à jour' });
+      if (buts_domicile !== undefined) { updateFields.push('buts_domicile = ?'); updateValues.push(buts_domicile); }
+      if (buts_exterieur !== undefined) { updateFields.push('buts_exterieur = ?'); updateValues.push(buts_exterieur); }
+      if (observations !== undefined) { updateFields.push('observations = ?'); updateValues.push(observations); }
+      if (validation_officielle !== undefined) { updateFields.push('validation_officielle = ?'); updateValues.push(validation_officielle); }
+
+      if (updateFields.length > 0) {
+        updateValues.push(id);
+        await connection.query(`UPDATE resultats SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+      }
+
+      // Mise à jour des buteurs si fournis
+      if (buteurs !== undefined) {
+        const matchId = existing[0].match_id;
+        await connection.query('DELETE FROM match_buteurs WHERE match_id = ?', [matchId]);
+        
+        if (buteurs.length > 0) {
+          const values = buteurs.map(b => [matchId, b.joueur_id, b.nb_buts]);
+          await connection.query('INSERT INTO match_buteurs (match_id, joueur_id, nb_buts) VALUES ?', [values]);
+        }
+      }
+
+      await connection.commit();
+
+      // Synchronisation du classement (post-transaction)
+      const needsSync = (buts_domicile !== undefined || buts_exterieur !== undefined || validation_officielle !== undefined) && 
+                       (existing[0].validation_officielle || validation_officielle === true);
+
+      if (needsSync) {
+        const [match] = await pool.query('SELECT competition_id FROM matchs WHERE id = ?', [existing[0].match_id]);
+        if (match.length > 0) await syncClassementUtils.syncCompetition(match[0].competition_id);
+      }
+
+      const [result] = await pool.query('SELECT * FROM resultats WHERE id = ?', [id]);
+      res.json({ success: true, data: result[0] });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
     }
-
-    updateValues.push(id);
-    await pool.query(`UPDATE resultats SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
-
-    const [result] = await pool.query('SELECT * FROM resultats WHERE id = ?', [id]);
-
-    res.json({ success: true, data: result[0] });
   } catch (error) {
     console.error('Error updating resultat:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
@@ -193,6 +241,12 @@ const validateResultat = async (req, res) => {
 
     await pool.query('UPDATE resultats SET validation_officielle = ? WHERE id = ?', [true, id]);
 
+    // Mettre à jour le classement de la compétition concernée
+    const [match] = await pool.query('SELECT competition_id FROM matchs WHERE id = ?', [existing[0].match_id]);
+    if (match.length > 0) {
+      await syncClassementUtils.syncCompetition(match[0].competition_id);
+    }
+
     const [result] = await pool.query('SELECT * FROM resultats WHERE id = ?', [id]);
 
     res.json({ success: true, data: result[0] });
@@ -206,16 +260,22 @@ const deleteResultat = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const [resultat] = await pool.query('SELECT match_id FROM resultats WHERE id = ?', [id]);
+    const [resultat] = await pool.query('SELECT match_id, validation_officielle FROM resultats WHERE id = ?', [id]);
     if (resultat.length === 0) {
       return res.status(404).json({ success: false, message: 'Résultat non trouvé' });
     }
 
     const matchId = resultat[0].match_id;
+    const etaitValide = resultat[0].validation_officielle;
 
     await pool.query('DELETE FROM resultats WHERE id = ?', [id]);
-
     await pool.query('UPDATE matchs SET statut = ? WHERE id = ?', ['programme', matchId]);
+
+    // Si on supprime un résultat qui était validé, il faut recalculer le classement
+    if (etaitValide) {
+      const [match] = await pool.query('SELECT competition_id FROM matchs WHERE id = ?', [matchId]);
+      if (match.length > 0) await syncClassementUtils.syncCompetition(match[0].competition_id);
+    }
 
     res.json({ success: true, message: 'Résultat supprimé' });
   } catch (error) {
@@ -261,6 +321,40 @@ const getHistoriqueResultats = async (req, res) => {
   }
 };
 
+const setMatchButeurs = async (req, res) => {
+  try {
+    const { id } = req.params; // ID du résultat
+    const { buteurs } = req.body; // Tableau de { joueur_id, nb_buts }
+
+    // Récupérer le match_id associé au résultat
+    const [resultat] = await pool.query('SELECT match_id FROM resultats WHERE id = ?', [id]);
+    if (resultat.length === 0) {
+      return res.status(404).json({ success: false, message: 'Résultat non trouvé' });
+    }
+
+    const matchId = resultat[0].match_id;
+
+    // 1. Supprimer les anciens buteurs enregistrés pour ce match
+    await pool.query('DELETE FROM match_buteurs WHERE match_id = ?', [matchId]);
+
+    // 2. Insérer les nouveaux buteurs si le tableau n'est pas vide
+    if (buteurs && buteurs.length > 0) {
+      // Format attendu pour l'insertion multiple : [[val1, val2], [val1, val2]]
+      const values = buteurs.map(b => [matchId, b.joueur_id, b.nb_buts]);
+      
+      await pool.query(
+        'INSERT INTO match_buteurs (match_id, joueur_id, nb_buts) VALUES ?',
+        [values]
+      );
+    }
+
+    res.json({ success: true, message: 'Statistiques des buteurs mises à jour' });
+  } catch (error) {
+    console.error('Error setting match buteurs:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur lors de l\'enregistrement des buteurs' });
+  }
+};
+
 module.exports = {
   getAllResultats,
   getResultatById,
@@ -269,5 +363,6 @@ module.exports = {
   updateResultat,
   validateResultat,
   deleteResultat,
-  getHistoriqueResultats
+  getHistoriqueResultats,
+  setMatchButeurs
 };

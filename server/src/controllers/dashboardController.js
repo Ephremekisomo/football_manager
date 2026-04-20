@@ -32,6 +32,10 @@ const getDashboardStats = async (req, res) => {
     const [resultatsResult] = await pool.query('SELECT COUNT(*) as count FROM resultats');
     stats.total_resultats = parseInt(resultatsResult[0].count);
 
+    // Total trophées attribués
+    const [tropheesResult] = await pool.query('SELECT COUNT(*) as count FROM trophees');
+    stats.total_trophees = parseInt(tropheesResult[0].count);
+
     // Utilisateurs par rôle
     const [rolesResult] = await pool.query(`
       SELECT role, COUNT(*) as count 
@@ -60,5 +64,3 @@ const getDashboardStats = async (req, res) => {
 };
 
 module.exports = { getDashboardStats };
-
-

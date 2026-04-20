@@ -75,7 +75,7 @@ const createArbitre = async (req, res) => {
     }
 
     await pool.query(
-      'INSERT INTO arbitres (user_id, nom, postnom, prenom, licence, categorie, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO arbitres (user_id, nom, postnom, prenom, licence, categorie, region) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [user_id, nom, postnom, prenom, licence, categorie, region]
     );
 

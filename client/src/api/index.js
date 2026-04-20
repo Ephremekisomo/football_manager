@@ -113,6 +113,15 @@ export const matchAPI = {
   getCalendar: (params) => api.get('/matchs/calendar', { params })
 };
 
+export const classementAPI = {
+  getAll: (params) => api.get('/classements', { params })
+};
+
+export const tropheeAPI = {
+  getAll: (params) => api.get('/trophees', { params }),
+  getById: (id) => api.get(`/trophees/${id}`)
+};
+
 export const resultatAPI = {
   getAll: (params) => api.get('/resultats', { params }),
   getById: (id) => api.get(`/resultats/${id}`),

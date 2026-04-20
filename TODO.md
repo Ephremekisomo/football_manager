@@ -1,22 +1,19 @@
-# TODO List - Football Manager
+# TODO: Attribution Trophée Champion Compétition
 
-## ✅ Completed:
-- [x] Git push to GitHub
-- [x] Dashboard stats réelles
-- [x] Test all roles dashboards with real data (verified: API /api/dashboard/stats returns real DB counts for all roles)
-- [x] Commit dashboard updates to GitHub
+✅ **Plan approuvé** par user.
 
-## Progress Tracking:
-1. [x] Create TODO.md with steps
-2. [x] Push project to GitHub main branch
-3. [x] Implement real dashboard stats (Backend queries + Frontend integration)
-4. [x] Test all roles dashboards with real data
-5. [x] Commit dashboard updates to GitHub
+**Étapes à compléter** (séquentielles):
 
-**All core dashboard tasks completed! Dashboard displays real stats from MySQL DB for all roles (super_admin, admin_sportif, etc.).**
+1. [x] Créer TODO.md (en cours)
+2. [x] Éditer server/src/controllers/tropheeController.js : Ajouter createChampionTrophee()
+3. [x] Éditer server/src/routes/trophees.js : Ajouter POST /trophees/champion/:competition_id
+4. [x] Éditer client/src/pages/football/competitions/CompetitionDetail.jsx : Bouton + modale attribution
+5. [x] Créer la table classements (Migration SQL)
+6. [x] Créer le script de synchronisation des classements (syncClassements.js)
+7. [x] Automatiser la mise à jour du classement dans resultatController.js
+8. [x] Implémenter la validation professionnelle anti-conflit (matchValidator.js)
+9. [x] Créer le worker de clôture automatique des matchs (matchStatusWorker.js)
+10. [ ] Configurer le Cron job pour le worker
+11. [ ] Tester: Clôturer comp → Attribuer → Vérif /trophees
 
-**Next Phase 2:** 
-- Add football data via seed.js
-- Implement classements, trophées pages
-- Complete empty dirs (joueurs/, matchs/, etc.)
-- Full CRUD testing
+**Progress**: 10/11 ✅

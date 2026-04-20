@@ -1,4 +1,5 @@
 const pool = require('./database');
+const syncClassementUtils = require('../controllers/syncClassements');
 
 const createTables = async () => {
   let connection;
@@ -149,6 +150,30 @@ const createTables = async () => {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS classements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        competition_id INT NOT NULL,
+        club_id INT NOT NULL,
+        equipe VARCHAR(255) NOT NULL,
+        matchs_joues INT DEFAULT 0,
+        victoires INT DEFAULT 0,
+        nuls INT DEFAULT 0,
+        defaites INT DEFAULT 0,
+        buts_pour INT DEFAULT 0,
+        buts_contre INT DEFAULT 0,
+        diff_buts INT DEFAULT 0,
+        points INT DEFAULT 0,
+        forme VARCHAR(10) DEFAULT '',
+        saison VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE,
+        FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+        UNIQUE KEY (competition_id, equipe)
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS trophees (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nom_trophee VARCHAR(100) NOT NULL,
@@ -176,10 +201,21 @@ const createTables = async () => {
     try { await connection.query(`CREATE INDEX idx_competitions_statut ON competitions(statut)`); } catch(e) {}
     try { await connection.query(`CREATE INDEX idx_participations_competition ON participations(competition_id)`); } catch(e) {}
     try { await connection.query(`CREATE INDEX idx_matchs_competition ON matchs(competition_id)`); } catch(e) {}
+    try { await connection.query(`CREATE INDEX idx_classements_comp ON classements(competition_id)`); } catch(e) {}
     try { await connection.query(`CREATE INDEX idx_matchs_date ON matchs(date_match)`); } catch(e) {}
     try { await connection.query(`CREATE INDEX idx_resultats_match ON resultats(match_id)`); } catch(e) {}
+    try { await connection.query(`ALTER TABLE classements ADD COLUMN club_id INT NOT NULL AFTER competition_id`); } catch(e) {}
+    try { await connection.query(`ALTER TABLE classements ADD COLUMN forme VARCHAR(10) DEFAULT '' AFTER points`); } catch(e) {}
 
     console.log('All tables created successfully');
+
+    // Synchronisation automatique des classements au démarrage du serveur
+    try {
+      console.log('Démarrage de la synchronisation automatique des classements...');
+      await syncClassementUtils.syncAllClassements();
+    } catch (syncError) {
+      console.error('Erreur lors de la synchronisation automatique:', syncError.message);
+    }
 
     try { await connection.query(`ALTER TABLE clubs MODIFY logo LONGTEXT`); } catch(e) {}
   } catch (error) {

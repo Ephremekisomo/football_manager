@@ -13,6 +13,8 @@ const arbitreRoutes = require('./routes/arbitres');
 const matchRoutes = require('./routes/matchs');
 const resultatRoutes = require('./routes/resultats');
 const dashboardRoutes = require('./routes/dashboard');
+const classementRoutes = require('./routes/classements');
+const tropheeRoutes = require('./routes/trophees');
 
 const app = express();
 
@@ -21,7 +23,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json({ limit: '10mb', verify: (body, encoding) => body.toString() }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); 
 
 // Debug middleware
@@ -43,6 +45,8 @@ app.use('/api/arbitres', arbitreRoutes);
 app.use('/api/matchs', matchRoutes);
 app.use('/api/resultats', resultatRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/classements', classementRoutes);
+app.use('/api/trophees', tropheeRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Football Management System API' });

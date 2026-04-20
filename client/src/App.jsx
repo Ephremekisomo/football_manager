@@ -27,6 +27,9 @@ import MatchDetail from './pages/football/matchs/MatchDetail';
 import ResultatsList from './pages/football/resultats/ResultatsList';
 import ResultForm from './pages/football/resultats/ResultForm';
 import ResultDetail from './pages/football/resultats/ResultDetail';
+import ClassementsList from './pages/classements/ClassementsList';
+import ClassementDetail from './pages/classements/ClassementDetail';
+import TropheesList from './pages/trophees/TropheesList';
 
 function App() {
   return (
@@ -181,6 +184,21 @@ function App() {
             <Route path="resultats/:id/edit" element={
               <RoleRoute allowedRoles={['super_admin', 'admin_sportif']}>
                 <ResultForm />
+              </RoleRoute>
+            } />
+            <Route path="classements" element={
+              <RoleRoute allowedRoles={['super_admin', 'admin_sportif', 'responsable_club', 'visiteur']}>
+                <ClassementsList />
+              </RoleRoute>
+            } />
+            <Route path="classements/:equipe" element={
+              <RoleRoute allowedRoles={['super_admin', 'admin_sportif', 'responsable_club', 'visiteur']}>
+                <ClassementDetail />
+              </RoleRoute>
+            } />
+            <Route path="trophees" element={
+              <RoleRoute allowedRoles={['super_admin', 'admin_sportif', 'responsable_club', 'visiteur']}>
+                <TropheesList />
               </RoleRoute>
             } />
           </Route>
