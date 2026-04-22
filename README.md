@@ -37,7 +37,7 @@ football-manager/
 
 ### 1. Base de données MySQL
 
-Via un client MySQL (HeidiSQL, MySQL Workbench, ou terminal) :
+Via un client MySQL  :
 ```sql
 CREATE DATABASE football_management;
 ```
@@ -81,17 +81,18 @@ npm run dev
 
 ## Comptes de test (seedés automatiquement)
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Super Admin | admin@football.com | Admin123* |
-| Admin Sportif | admin@sport.com | Admin123* |
-| Responsable Club | ocjs@club.com | Admin123* |
-| Arbitre | arbitre@test.com | Admin123* |
-| Visiteur | visiteur@test.com | Admin123* |
+| Rôle |
+|------|
+| Super Admin | 
+| Admin Sportif | 
+| Responsable Club |
+| Arbitre | 
+| Visiteur | 
 
 ## Fonctionnalités implémentées (Phase 1)
 
 ### Authentification
+-lading page 
 - Login avec email/username + mot de passe
 - JWT authentication
 - Changement de mot de passe

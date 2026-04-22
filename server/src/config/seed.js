@@ -1,7 +1,7 @@
 const pool = require('./database');
 const bcrypt = require('bcryptjs');
 
-const seedDatabase = async () => {
+ const seedDatabase = async () => {
   let connection;
   try {
     connection = await pool.getConnection();
@@ -34,7 +34,7 @@ const seedDatabase = async () => {
     }
 
     const clubs = [
-      { nom: 'FC Robot', sigle: 'FCR', ville: 'Kinshasa', province: 'Kinshasa', stade: 'Stade des Martyrs', couleurs: 'Rouge et Noir', president: 'Jean Dupont', telephone: '+243812345678', email: 'fcrobot@fcr.cd' },
+     
       { nom: 'AS Vita Club', sigle: 'ASVC', ville: 'Kinshasa', province: 'Kinshasa', stade: 'Stade des Martyrs', couleurs: 'Jaune et Noir', president: 'Pierre Okud', telephone: '+243812345679', email: 'asvita@asvc.cd' },
       { nom: 'TP Mazembe', sigle: 'TPM', ville: 'Lubumbashi', province: 'Haut-Lu kata', stade: 'Stade Kamalondo', couleurs: 'Noir et Blanc', president: 'Mohamed Bah', telephone: '+243812345680', email: 'tpmazembe@tpm.cd' }
     ];
@@ -128,6 +128,6 @@ const seedDatabase = async () => {
   } finally {
     if (connection) connection.release();
   }
-};
+}; 
 
 module.exports = seedDatabase;

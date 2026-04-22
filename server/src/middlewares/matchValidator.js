@@ -10,6 +10,14 @@ const validateMatchScheduling = async (req, res, next) => {
   try {
     const now = new Date();
 
+    // 0. Vérifier que les deux clubs sont différents
+    if (club_domicile_id === club_exterieur_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Un club ne peut pas jouer contre lui-même."
+      });
+    }
+
     // Si on ne modifie que le statut (ex: l'arbitre démarre le match), on assouplit la validation de date
     const isStatusOnly = req.method === 'PUT' && req.body.statut && !date_match;
 

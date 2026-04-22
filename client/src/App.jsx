@@ -3,6 +3,7 @@ import { ProtectedRoute, RoleRoute } from './routes/ProtectedRoute';
 import AuthLayout from './components/layout/AuthLayout';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/auth/Login';
+import LandingPage from './pages/LandingPage';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/dashboards/Dashboard';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -35,6 +36,9 @@ function App() {
   return (
 <BrowserRouter future={{ v7_relativeSplatPath: true }}>
       <Routes>
+        {/* Route publique par défaut */}
+        <Route path="/" element={<LandingPage />} />
+
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -44,8 +48,8 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Navigate to="/" replace />} />
-            <Route index element={<Dashboard />} />
+            {/* Le Dashboard est maintenant accessible sur /dashboard */}
+            <Route path="/dashboard" element={<Dashboard />} />
             
             <Route path="admin/users" element={
               <RoleRoute allowedRoles={['super_admin']}>
