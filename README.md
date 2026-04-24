@@ -86,8 +86,8 @@ npm run dev
 
 ## Comptes de test (seedés automatiquement)
 
-| Rôle | Email |
-|------|-------|
+| Rôle |
+|------|
 | Super Admin | 
 | Admin Sportif |
 | Responsable Club |
