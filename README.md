@@ -147,6 +147,7 @@ npm run dev
 Phase 2 prévoit l'implémentation des modules :
 - Clubs
 - Joueurs
+- match_buteur
 - Compétitions
 - Matchs
 - Résultats
